@@ -66,11 +66,12 @@
  *     - Fuse 3D points, update all graphs
  *     - Graph optimization (propagate transformation matrices), update all map points
  */
-
+#ifdef USE_PANGOLIN
+#include <pangolin/pangolin.h>
+#endif
 #include "System.h"
 #include "Converter.h"
 #include <thread>
-#include <pangolin/pangolin.h>
 #include <iomanip>
 #include <openssl/md5.h>
 #include <boost/serialization/base_object.hpp>
@@ -244,9 +245,14 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if (mSensor==IMU_STEREO || mSensor==IMU_MONOCULAR || mSensor==IMU_RGBD)
         mpAtlas->SetInertialSensor();
 
-    //Create Drawers. These are used by the Viewer
     mpFrameDrawer = nullptr;
     mpMapDrawer = nullptr;
+
+    //Create Drawers. These are used by the Viewer
+    #ifdef USE_PANGOLIN
+        mpFrameDrawer = new FrameDrawer(mpAtlas);
+        mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+    #endif
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
@@ -272,13 +278,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mpLocalMapper->mbFarPoints = false;
 
     //Initialize the Dense mapping thread and launch
-    if(settings_->doDenseMapping()){
+    if(settings_->doDenseMapping()) {
         mpDenseMapper = new DenseMapping(this, mpAtlas, settings_); //todo: resolution as parameter
         mptDenseMapping = new thread(&ORB_SLAM3::DenseMapping::Run, mpDenseMapper);
-        // TODO: leave this asside for a moment
-        // mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
-        // mpMapDrawer->mpDenseMapper = mpDenseMapper;
-    }else{
+        #ifdef USE_PANGOLIN
+            mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+            mpMapDrawer->mpDenseMapper = mpDenseMapper;
+        #endif
+    }
+    else {
         mpDenseMapper = NULL;
         mptDenseMapping = NULL;
     }
@@ -306,8 +314,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(bUseViewer)
     //if(false) // TODO
     {
-        mpFrameDrawer = new FrameDrawer(mpAtlas);
-        mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
         mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);

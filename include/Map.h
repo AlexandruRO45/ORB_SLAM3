@@ -24,7 +24,9 @@
 #include "KeyFrame.h"
 
 #include <set>
+#ifdef USE_PANGOLIN
 #include <pangolin/pangolin.h>
+#endif
 #include <mutex>
 
 #include <boost/serialization/base_object.hpp>
