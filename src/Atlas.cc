@@ -17,7 +17,9 @@
 */
 
 #include "Atlas.h"
+#ifdef USE_PANGOLIN
 #include "Viewer.h"
+#endif
 
 #include "GeometricCamera.h"
 #include "Pinhole.h"
