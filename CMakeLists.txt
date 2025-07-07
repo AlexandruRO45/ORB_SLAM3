@@ -67,25 +67,34 @@ endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
+if(Pangolin_FOUND)
+    list(APPEND ORB_SRC_FILES_WITH_PANGOLIN
+        src/Viewer.cc
+        include/Viewer.h
+        src/MapDrawer.cc
+        include/MapDrawer.h
+        src/FrameDrawer.cc
+        include/FrameDrawer.h
+    )
+endif()
+
 add_library(${PROJECT_NAME} SHARED
+${ORB_SRC_FILES_WITH_PANGOLIN}
 src/System.cc
 src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/ORBextractor.cc
 src/ORBmatcher.cc
-# src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc
 src/KeyFrame.cc
 src/Atlas.cc
 src/Map.cc
-# src/MapDrawer.cc
 src/Optimizer.cc
 src/Frame.cc
 src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
-# src/Viewer.cc
 src/ImuTypes.cc
 src/DenseMapping.cc
 src/G2oTypes.cc
@@ -103,19 +112,16 @@ include/LocalMapping.h
 include/LoopClosing.h
 include/ORBextractor.h
 include/ORBmatcher.h
-# include/FrameDrawer.h
 include/Converter.h
 include/MapPoint.h
 include/KeyFrame.h
 include/Atlas.h
 include/Map.h
-# include/MapDrawer.h
 include/Optimizer.h
 include/Frame.h
 include/DenseMapping.h
 include/KeyFrameDatabase.h
 include/Sim3Solver.h
-# include/Viewer.h
 include/ImuTypes.h
 include/G2oTypes.h
 include/CameraModels/GeometricCamera.h
@@ -130,17 +136,13 @@ include/Config.h
 include/Settings.h)
 
 if(Pangolin_FOUND)
-    list(APPEND ORB_SRC_FILES
-        src/Viewer.cc
-        include/Viewer.h
-        src/MapDrawer.cc
-        include/MapDrawer.h
-        src/FrameDrawer.cc
-        include/FrameDrawer.h
-    )
+   list(APPEND PANGOLIN_FOR_INCLUDE_DIRS
+      ${Pangolin_INCLUDE_DIRS}
+   )
+   list(APPEND PANGOLIN_FOR_LIBRARIES
+      ${Pangolin_LIBRARIES}
+   )
 endif()
-
-add_library(${PROJECT_NAME} SHARED ${ORB_SRC_FILES})
 
 add_subdirectory(Thirdparty/g2o)
 add_subdirectory(Thirdparty/DBoW2)
@@ -152,7 +154,7 @@ ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
 ${EIGEN3_INCLUDE_DIR}
-# ${Pangolin_INCLUDE_DIRS}
+${Pangolin_FOR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -160,7 +162,7 @@ ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${PCL_LIBRARIES} 
 ${OCTOMAP_LIBRARIES}
-# ${Pangolin_LIBRARIES}
+${Pangolin_FOR_LIBRARIES}
 DBoW2
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
@@ -177,14 +179,6 @@ if(realsense2_FOUND)
     )
 endif()
 
-if(Pangolin_FOUND)
-   target_include_directories(${PROJECT_NAME} PUBLIC
-      ${Pangolin_INCLUDE_DIRS}
-   )
-   target_link_libraries(${PROJECT_NAME}
-      ${Pangolin_LIBRARIES}
-   )
-endif()
 
 # Build examples
 
