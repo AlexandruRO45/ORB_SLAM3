@@ -16,13 +16,16 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef USE_PANGOLIN
+#include "FrameDrawer.h"
+
+#endif
+
+
 
 #include "Tracking.h"
 
 #include "ORBmatcher.h"
-#ifdef USE_PANGOLIN
-#include "FrameDrawer.h"
-#endif
 #include "Converter.h"
 #include "G2oTypes.h"
 #include "Optimizer.h"
@@ -567,8 +570,11 @@ void Tracking::newParameterLoader(Settings *settings) {
 
         mTlr = settings->Tlr();
 
+#ifdef USE_PANGOLIN
         if(mpFrameDrawer)
             mpFrameDrawer->both = true;
+#endif
+
     }
 
     if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD ){
@@ -1090,8 +1096,10 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
                 static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[0] = leftLappingBegin;
                 static_cast<KannalaBrandt8*>(mpCamera)->mvLappingArea[1] = leftLappingEnd;
 
+#ifdef USE_PANGOLIN
                 if(mpFrameDrawer)
                     mpFrameDrawer->both = true;
+#endif
 
                 vector<float> vCamCalib2{fx,fy,cx,cy,k1,k2,k3,k4};
                 mpCamera2 = new KannalaBrandt8(vCamCalib2);
@@ -1438,10 +1446,12 @@ void Tracking::SetLoopClosing(LoopClosing *pLoopClosing)
     mpLoopClosing=pLoopClosing;
 }
 
+#ifdef USE_PANGOLIN
 void Tracking::SetViewer(Viewer *pViewer)
 {
     mpViewer=pViewer;
 }
+#endif
 
 void Tracking::SetStepByStep(bool bSet)
 {
@@ -2206,12 +2216,14 @@ void Tracking::Track()
         vdLMTrack_ms.push_back(timeLMTrack);
 #endif
 
+#ifdef USE_PANGOLIN
         // Update drawer
         if(mpFrameDrawer)
             mpFrameDrawer->Update(this);
         if(mCurrentFrame.isSet())
             if(mpMapDrawer)
                 mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.GetPose());
+#endif
 
         if(bOK || mState==RECENTLY_LOST)
         {
@@ -2226,9 +2238,11 @@ void Tracking::Track()
                 mbVelocity = false;
             }
 
+#ifdef USE_PANGOLIN
             if(mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
                 if(mpMapDrawer)
                     mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.GetPose());
+#endif
 
             // Clean VO matches
             for(int i=0; i<mCurrentFrame.N; i++)
@@ -2453,8 +2467,10 @@ void Tracking::StereoInitialization()
 
         mpAtlas->GetCurrentMap()->mvpKeyFrameOrigins.push_back(pKFini);
 
+#ifdef USE_PANGOLIN
         if(mpMapDrawer)
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.GetPose());
+#endif
 
         mState=OK;
     }
@@ -2665,8 +2681,10 @@ void Tracking::CreateInitialMapMonocular()
 
     mpAtlas->SetReferenceMapPoints(mvpLocalMapPoints);
 
+#ifdef USE_PANGOLIN
     if(mpMapDrawer)
         mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
+#endif
 
     mpAtlas->GetCurrentMap()->mvpKeyFrameOrigins.push_back(pKFini);
 
@@ -3809,12 +3827,14 @@ void Tracking::Reset(bool bLocMap)
 {
     Verbose::PrintMess("System Reseting", Verbose::VERBOSITY_NORMAL);
 
+#ifdef USE_PANGOLIN
     if(mpViewer)
     {
         mpViewer->RequestStop();
         while(!mpViewer->isStopped())
             usleep(3000);
     }
+#endif
 
     // Reset Local Mapping
     if (!bLocMap)
@@ -3860,8 +3880,10 @@ void Tracking::Reset(bool bLocMap)
     mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
     mvIniMatches.clear();
 
+#ifdef USE_PANGOLIN
     if(mpViewer)
         mpViewer->Release();
+#endif
 
     Verbose::PrintMess("   End reseting! ", Verbose::VERBOSITY_NORMAL);
 }
@@ -3869,12 +3891,15 @@ void Tracking::Reset(bool bLocMap)
 void Tracking::ResetActiveMap(bool bLocMap)
 {
     Verbose::PrintMess("Active map Reseting", Verbose::VERBOSITY_NORMAL);
+
+#ifdef USE_PANGOLIN
     if(mpViewer)
     {
         mpViewer->RequestStop();
         while(!mpViewer->isStopped())
             usleep(3000);
     }
+#endif
 
     Map* pMap = mpAtlas->GetCurrentMap();
 
@@ -3951,8 +3976,10 @@ void Tracking::ResetActiveMap(bool bLocMap)
 
     mbVelocity = false;
 
+#ifdef USE_PANGOLIN
     if(mpViewer)
         mpViewer->Release();
+#endif
 
     Verbose::PrintMess("   End reseting! ", Verbose::VERBOSITY_NORMAL);
 }

@@ -20,6 +20,13 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#ifdef USE_PANGOLIN
+#include "FrameDrawer.h"
+#include "MapDrawer.h"
+#include "Viewer.h"
+#endif
+
+
 
 #include <unistd.h>
 #include<stdio.h>
@@ -29,11 +36,6 @@
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
-#ifdef USE_PANGOLIN
-#include "FrameDrawer.h"
-#include "MapDrawer.h"
-#include "Viewer.h"
-#endif
 #include "Atlas.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"

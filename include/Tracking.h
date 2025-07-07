@@ -20,14 +20,17 @@
 #ifndef TRACKING_H
 #define TRACKING_H
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-
 #ifdef USE_PANGOLIN
 #include "Viewer.h"
 #include "MapDrawer.h"
 #include "FrameDrawer.h"
 #endif
+
+
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/features2d/features2d.hpp>
+
 #include "Atlas.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
@@ -79,7 +82,10 @@ public:
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
+
+#ifdef USE_PANGOLIN
     void SetViewer(Viewer* pViewer);
+#endif
     void SetStepByStep(bool bSet);
     bool GetStepByStep();
 
@@ -280,7 +286,7 @@ protected:
     
     // System
     System* mpSystem;
-    
+
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;

@@ -66,9 +66,14 @@
  *     - Fuse 3D points, update all graphs
  *     - Graph optimization (propagate transformation matrices), update all map points
  */
-#ifdef USE_PANGOLIN
+
+ #ifdef USE_PANGOLIN
 #include <pangolin/pangolin.h>
+
 #endif
+
+
+
 #include "System.h"
 #include "Converter.h"
 #include <thread>
@@ -249,10 +254,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpMapDrawer = nullptr;
 
     //Create Drawers. These are used by the Viewer
-    #ifdef USE_PANGOLIN
+#ifdef USE_PANGOLIN
         mpFrameDrawer = new FrameDrawer(mpAtlas);
         mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
-    #endif
+#endif
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
@@ -281,10 +286,11 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(settings_->doDenseMapping()) {
         mpDenseMapper = new DenseMapping(this, mpAtlas, settings_); //todo: resolution as parameter
         mptDenseMapping = new thread(&ORB_SLAM3::DenseMapping::Run, mpDenseMapper);
-        #ifdef USE_PANGOLIN
+
+#ifdef USE_PANGOLIN
             mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
             mpMapDrawer->mpDenseMapper = mpDenseMapper;
-        #endif
+#endif
     }
     else {
         mpDenseMapper = NULL;
@@ -314,11 +320,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(bUseViewer)
     //if(false) // TODO
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_);
+        std::cout << "Viewer Enabled..." << std::endl;
+
+#ifdef USE_PANGOLIN
+        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile, settings_);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
         mpLoopCloser->mpViewer = mpViewer;
         mpViewer->both = mpFrameDrawer->both;
+#endif
     }
 
     // Fix verbosity

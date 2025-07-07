@@ -20,13 +20,16 @@
 #ifndef MAP_H
 #define MAP_H
 
+#ifdef USE_PANGOLIN
+#include <pangolin/pangolin.h>
+#endif
+
+
+
 #include "MapPoint.h"
 #include "KeyFrame.h"
 
 #include <set>
-#ifdef USE_PANGOLIN
-#include <pangolin/pangolin.h>
-#endif
 #include <mutex>
 
 #include <boost/serialization/base_object.hpp>
@@ -188,9 +191,10 @@ protected:
     // Index related to a big change in the map (loop closure, global BA)
     int mnBigChangeIdx;
 
-
+#ifdef USE_PANGOLIN
     // View of the map in aerial sight (for the AtlasViewer)
     GLubyte* mThumbnail;
+#endif
 
     bool mIsInUse;
     bool mHasTumbnail;

@@ -80,8 +80,9 @@ public:
     void ChangeMap(Map* pMap);
 
     unsigned long int GetLastInitKFid();
-
+#ifdef USE_PANGOLIN
     void SetViewer(Viewer* pViewer);
+#endif
 
     // Method for change components in the current map
     void AddKeyFrame(KeyFrame* pKF);
