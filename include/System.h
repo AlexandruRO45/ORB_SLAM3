@@ -29,14 +29,16 @@
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
+#ifdef USE_PANGOLIN
 #include "FrameDrawer.h"
 #include "MapDrawer.h"
+#include "Viewer.h"
+#endif
 #include "Atlas.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
-#include "Viewer.h"
 #include "ImuTypes.h"
 #include "Settings.h"
 #include "DenseMapping.h"
