@@ -49,9 +49,10 @@
 
 namespace ORB_SLAM3
 {
-
+#ifdef USE_PANGOLIN
 class Viewer;
 class FrameDrawer;
+#endif
 class Atlas;
 class LocalMapping;
 class LoopClosing;
@@ -63,8 +64,12 @@ class Tracking
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
-             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
+    Tracking(System* pSys, ORBVocabulary* pVoc,
+#ifdef USE_PANGOLIN
+        FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, 
+#endif
+        Atlas* pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string()
+);
 
     ~Tracking();
 
@@ -287,11 +292,13 @@ protected:
     // System
     System* mpSystem;
 
+#ifdef USE_PANGOLIN
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
     bool bStepByStep;
+#endif
 
     //Atlas
     Atlas* mpAtlas;

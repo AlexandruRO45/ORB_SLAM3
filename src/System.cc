@@ -99,9 +99,11 @@ bool has_suffix(const std::string &str, const std::string &suffix) {
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer, const int initFr, const string &strSequence):
-    mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
-    mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
+               const bool bUseViewer, const int initFr, const string &strSequence): mSensor(sensor), 
+#ifdef USE_PANGOLIN 
+    mpViewer(static_cast<Viewer*>(NULL)), 
+#endif 
+    mbReset(false), mbResetActiveMap(false), mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
     // Output welcome message
     // cout << endl <<
@@ -250,20 +252,22 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if (mSensor==IMU_STEREO || mSensor==IMU_MONOCULAR || mSensor==IMU_RGBD)
         mpAtlas->SetInertialSensor();
 
-    mpFrameDrawer = nullptr;
-    mpMapDrawer = nullptr;
-
     //Create Drawers. These are used by the Viewer
 #ifdef USE_PANGOLIN
-        mpFrameDrawer = new FrameDrawer(mpAtlas);
-        mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+    mpFrameDrawer = new FrameDrawer(mpAtlas);
+    mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
 #endif
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     cout << "Seq. Name: " << strSequence << endl;
-    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence);
+    mpTracker = new Tracking(
+        this, mpVocabulary,
+#ifdef USE_PANGOLIN
+        mpFrameDrawer, mpMapDrawer,
+#endif
+        mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence
+    );
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor==MONOCULAR || mSensor==IMU_MONOCULAR,

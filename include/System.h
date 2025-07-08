@@ -74,10 +74,11 @@ public:
         th = _th;
     }
 };
-
+#ifdef USE_PANGOLIN
 class Viewer;
 class FrameDrawer;
 class MapDrawer;
+#endif
 class Atlas;
 class Tracking;
 class LocalMapping;
@@ -236,11 +237,12 @@ private:
     // a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
     LoopClosing* mpLoopCloser;
 
+#ifdef USE_PANGOLIN
     // The viewer draws the map and the current camera pose. It uses Pangolin.
     Viewer* mpViewer;
-
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
+#endif
 
     // System threads: Local Mapping, Loop Closing, Viewer.
     // The Tracking thread "lives" in the main execution thread that creates the System object.

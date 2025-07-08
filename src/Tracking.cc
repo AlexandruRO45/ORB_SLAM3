@@ -46,11 +46,19 @@ namespace ORB_SLAM3
 {
 
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Atlas *pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq):
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc,
+#ifdef USE_PANGOLIN 
+    FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+#endif
+    Atlas *pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq
+):
     mState(NO_IMAGES_YET), mSensor(sensor), mTrackedFr(0), mbStep(false),
     mbOnlyTracking(false), mbMapUpdated(false), mbVO(false), mpORBVocabulary(pVoc), mpKeyFrameDB(pKFDB),
-    mbReadyToInitializate(false), mpSystem(pSys), mpViewer(NULL), bStepByStep(false),
-    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(100.0),
+    mbReadyToInitializate(false), mpSystem(pSys),
+#ifdef USE_PANGOLIN
+    mpViewer(NULL), bStepByStep(false), mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer),
+#endif
+    mpAtlas(pAtlas), mnLastRelocFrameId(0), time_recently_lost(100.0),
     mnInitialFrameId(0), mbCreatedMap(false), mnFirstFrameId(0), mpCamera2(nullptr), mpLastKeyFrame(static_cast<KeyFrame*>(NULL))
 {
     // Load camera parameters from settings file
@@ -1451,7 +1459,6 @@ void Tracking::SetViewer(Viewer *pViewer)
 {
     mpViewer=pViewer;
 }
-#endif
 
 void Tracking::SetStepByStep(bool bSet)
 {
@@ -1462,7 +1469,7 @@ bool Tracking::GetStepByStep()
 {
     return bStepByStep;
 }
-
+#endif
 
 
 Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, string filename)
@@ -1809,7 +1816,7 @@ void Tracking::ResetFrameIMU()
 
 void Tracking::Track()
 {
-
+#ifdef USE_PANGOLIN
     if (bStepByStep)
     {
         std::cout << "Tracking: Waiting to the next step" << std::endl;
@@ -1817,6 +1824,7 @@ void Tracking::Track()
             usleep(500);
         mbStep = false;
     }
+#endif
 
     if(mpLocalMapper->mbBadImu)
     {
