@@ -154,7 +154,7 @@ ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
 ${EIGEN3_INCLUDE_DIR}
-${Pangolin_FOR_INCLUDE_DIRS}
+${PANGOLIN_FOR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -162,7 +162,7 @@ ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${PCL_LIBRARIES} 
 ${OCTOMAP_LIBRARIES}
-${Pangolin_FOR_LIBRARIES}
+${PANGOLIN_FOR_LIBRARIES}
 DBoW2
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
