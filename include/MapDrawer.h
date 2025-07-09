@@ -23,9 +23,10 @@
 #include"Atlas.h"
 #include"MapPoint.h"
 #include"KeyFrame.h"
-#include "Settings.h"
+#include"Settings.h"
+#include"DenseMapping.h"
 #include<pangolin/pangolin.h>
-
+#include<octomap/OcTree.h>
 #include<mutex>
 
 namespace ORB_SLAM3
@@ -42,13 +43,16 @@ public:
     void newParameterLoader(Settings* settings);
 
     Atlas* mpAtlas;
+    DenseMapping* mpDenseMapper = nullptr;
 
     void DrawMapPoints();
+    void DrawOctoMap();
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph, const bool bDrawInertialGraph, const bool bDrawOptLba);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const Sophus::SE3f &Tcw);
     void SetReferenceKeyFrame(KeyFrame *pKF);
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M, pangolin::OpenGlMatrix &MOw);
+    void heightMapColor(double h, double& r, double &g, double& b);
 
 private:
 
@@ -62,7 +66,7 @@ private:
     float mCameraLineWidth;
 
     Sophus::SE3f mCameraPose;
-
+    
     std::mutex mMutexCamera;
 
     float mfFrameColors[6][3] = {{0.0f, 0.0f, 1.0f},

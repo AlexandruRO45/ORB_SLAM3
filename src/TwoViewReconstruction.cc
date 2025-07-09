@@ -182,7 +182,7 @@ namespace ORB_SLAM3
     void TwoViewReconstruction::FindFundamental(vector<bool> &vbMatchesInliers, float &score, Eigen::Matrix3f &F21)
     {
         // Number of putative matches
-        const int N = mvMatches12.size();
+        const int N = vbMatchesInliers.size();
 
         // Normalize coordinates
         vector<cv::Point2f> vPn1, vPn2;
@@ -725,7 +725,6 @@ namespace ORB_SLAM3
         if(secondBestGood<0.75*bestGood && bestParallax>=minParallax && bestGood>minTriangulated && bestGood>0.9*N)
         {
             T21 = Sophus::SE3f(vR[bestSolutionIdx], vt[bestSolutionIdx]);
-            vP3D = bestP3D;
             vbTriangulated = bestTriangulated;
 
             return true;

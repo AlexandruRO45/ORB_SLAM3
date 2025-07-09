@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     string file_name;
     bool bFileName = false;
 
-    if (argc == 4) {
+    if (argc == 5) {
         file_name = string(argv[argc - 1]);
         bFileName = true;
     }

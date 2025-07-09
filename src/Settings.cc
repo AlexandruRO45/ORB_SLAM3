@@ -168,6 +168,8 @@ namespace ORB_SLAM3 {
         cout << "\t-Loaded ORB settings" << endl;
         readViewer(fSettings);
         cout << "\t-Loaded viewer settings" << endl;
+        readDenseMapping(fSettings);
+        cout << "\t-Loaded dense mapping settings" << endl;
         readLoadAndSave(fSettings);
         cout << "\t-Loaded Atlas settings" << endl;
         readOtherParameters(fSettings);
@@ -207,20 +209,20 @@ namespace ORB_SLAM3 {
             if(found){
                 readParameter<float>(fSettings,"Camera1.k3",found,false);
                 if(found){
-                    vPinHoleDistortion1_.resize(5);
-                    vPinHoleDistortion1_[4] = readParameter<float>(fSettings,"Camera1.k3",found);
+                    vPinHoleDistorsion1_.resize(5);
+                    vPinHoleDistorsion1_[4] = readParameter<float>(fSettings,"Camera1.k3",found);
                 }
                 else{
-                    vPinHoleDistortion1_.resize(4);
+                    vPinHoleDistorsion1_.resize(4);
                 }
-                vPinHoleDistortion1_[0] = readParameter<float>(fSettings,"Camera1.k1",found);
-                vPinHoleDistortion1_[1] = readParameter<float>(fSettings,"Camera1.k2",found);
-                vPinHoleDistortion1_[2] = readParameter<float>(fSettings,"Camera1.p1",found);
-                vPinHoleDistortion1_[3] = readParameter<float>(fSettings,"Camera1.p2",found);
+                vPinHoleDistorsion1_[0] = readParameter<float>(fSettings,"Camera1.k1",found);
+                vPinHoleDistorsion1_[1] = readParameter<float>(fSettings,"Camera1.k2",found);
+                vPinHoleDistorsion1_[2] = readParameter<float>(fSettings,"Camera1.p1",found);
+                vPinHoleDistorsion1_[3] = readParameter<float>(fSettings,"Camera1.p2",found);
             }
 
             //Check if we need to correct distortion from the images
-            if((sensor_ == System::MONOCULAR || sensor_ == System::IMU_MONOCULAR) && vPinHoleDistortion1_.size() != 0){
+            if((sensor_ == System::MONOCULAR || sensor_ == System::IMU_MONOCULAR) && vPinHoleDistorsion1_.size() != 0){
                 bNeedToUndistort_ = true;
             }
         }
@@ -296,16 +298,16 @@ namespace ORB_SLAM3 {
             if(found){
                 readParameter<float>(fSettings,"Camera2.k3",found,false);
                 if(found){
-                    vPinHoleDistortion2_.resize(5);
-                    vPinHoleDistortion2_[4] = readParameter<float>(fSettings,"Camera2.k3",found);
+                    vPinHoleDistorsion2_.resize(5);
+                    vPinHoleDistorsion2_[4] = readParameter<float>(fSettings,"Camera2.k3",found);
                 }
                 else{
-                    vPinHoleDistortion2_.resize(4);
+                    vPinHoleDistorsion2_.resize(4);
                 }
-                vPinHoleDistortion2_[0] = readParameter<float>(fSettings,"Camera2.k1",found);
-                vPinHoleDistortion2_[1] = readParameter<float>(fSettings,"Camera2.k2",found);
-                vPinHoleDistortion2_[2] = readParameter<float>(fSettings,"Camera2.p1",found);
-                vPinHoleDistortion2_[3] = readParameter<float>(fSettings,"Camera2.p2",found);
+                vPinHoleDistorsion2_[0] = readParameter<float>(fSettings,"Camera2.k1",found);
+                vPinHoleDistorsion2_[1] = readParameter<float>(fSettings,"Camera2.k2",found);
+                vPinHoleDistorsion2_[2] = readParameter<float>(fSettings,"Camera2.p1",found);
+                vPinHoleDistorsion2_[3] = readParameter<float>(fSettings,"Camera2.p2",found);
             }
         }
         else if(cameraType_ == KannalaBrandt){
@@ -469,6 +471,19 @@ namespace ORB_SLAM3 {
             imageViewerScale_ = 1.0f;
     }
 
+    void Settings::readDenseMapping(cv::FileStorage &fSettings) {
+        bool found;
+
+        bDenseMapping_ = (bool)readParameter<int>(fSettings,"DenseMapping.on",found);
+        gridSize_ = readParameter<float>(fSettings,"DenseMapping.gridSize",found);
+        bMap2D_ = (bool)readParameter<int>(fSettings,"DenseMapping.map2D",found);
+        if(!found)
+            bMap2D_ = false;
+        camHeight_ = readParameter<float>(fSettings,"DenseMapping.camHeight",found);
+        maxRange_ = readParameter<float>(fSettings,"DenseMapping.maxRange",found);
+        bSimple_ = (bool)readParameter<int>(fSettings,"DenseMapping.simpleGround",found);
+    }
+
     void Settings::readLoadAndSave(cv::FileStorage &fSettings) {
         bool found;
 
@@ -542,9 +557,9 @@ namespace ORB_SLAM3 {
         }
         output << " ]" << endl;
 
-        if(!settings.vPinHoleDistortion1_.empty()){
+        if(!settings.vPinHoleDistorsion1_.empty()){
             output << "\t-Camera 1 distortion parameters: [ ";
-            for(float d : settings.vPinHoleDistortion1_){
+            for(float d : settings.vPinHoleDistorsion1_){
                 output << " " << d;
             }
             output << " ]" << endl;
@@ -558,19 +573,15 @@ namespace ORB_SLAM3 {
             else{
                 output << "Kannala-Brandt";
             }
-            
-            if (settings.cameraType_ != Settings::Rectified){
-                output << "" << ": [";
-                for(size_t i = 0; i < settings.originalCalib2_->size(); i++){
+            output << "" << ": [";
+            for(size_t i = 0; i < settings.originalCalib2_->size(); i++){
                 output << " " << settings.originalCalib2_->getParameter(i);
-                }
-                output << " ]" << endl;
             }
-            
+            output << " ]" << endl;
 
-            if(!settings.vPinHoleDistortion2_.empty()){
+            if(!settings.vPinHoleDistorsion2_.empty()){
                 output << "\t-Camera 1 distortion parameters: [ ";
-                for(float d : settings.vPinHoleDistortion2_){
+                for(float d : settings.vPinHoleDistorsion2_){
                     output << " " << d;
                 }
                 output << " ]" << endl;

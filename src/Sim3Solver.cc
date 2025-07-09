@@ -37,10 +37,10 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
     mnIterations(0), mnBestInliers(0), mbFixScale(bFixScale),
     pCamera1(pKF1->mpCamera), pCamera2(pKF2->mpCamera)
 {
-    bool bDifferentKFs = true;
+    bool bDifferentKFs = false;
     if(vpKeyFrameMatchedMP.empty())
     {
-        bDifferentKFs = false;
+        bDifferentKFs = true;
         vpKeyFrameMatchedMP = vector<KeyFrame*>(vpMatched12.size(), pKF2);
     }
 

@@ -30,7 +30,9 @@ Map::Map():mnMaxKFid(0),mnBigChangeIdx(0), mbImuInitialized(false), mnMapChange(
 mbFail(false), mIsInUse(false), mHasTumbnail(false), mbBad(false), mnMapChangeNotified(0), mbIsInertial(false), mbIMU_BA1(false), mbIMU_BA2(false)
 {
     mnId=nNextId++;
+#ifdef USE_PANGOLIN
     mThumbnail = static_cast<GLubyte*>(NULL);
+#endif
 }
 
 Map::Map(int initKFid):mnInitKFid(initKFid), mnMaxKFid(initKFid),/*mnLastLoopKFid(initKFid),*/ mnBigChangeIdx(0), mIsInUse(false),
@@ -38,7 +40,9 @@ Map::Map(int initKFid):mnInitKFid(initKFid), mnMaxKFid(initKFid),/*mnLastLoopKFi
                        mnMapChange(0), mbFail(false), mnMapChangeNotified(0), mbIsInertial(false), mbIMU_BA1(false), mbIMU_BA2(false)
 {
     mnId=nNextId++;
+#ifdef USE_PANGOLIN
     mThumbnail = static_cast<GLubyte*>(NULL);
+#endif
 }
 
 Map::~Map()
@@ -48,10 +52,11 @@ Map::~Map()
 
     //TODO: erase all keyframes from memory
     mspKeyFrames.clear();
-
+#ifdef USE_PANGOLIN
     if(mThumbnail)
         delete mThumbnail;
     mThumbnail = static_cast<GLubyte*>(NULL);
+#endif
 
     mvpReferenceMapPoints.clear();
     mvpKeyFrameOrigins.clear();

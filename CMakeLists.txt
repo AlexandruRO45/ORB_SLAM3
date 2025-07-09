@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8...3.5)
 project(ORB_SLAM3)
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -6,7 +6,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
-
+add_compile_options(-w)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
@@ -39,42 +39,64 @@ MESSAGE("OPENCV VERSION:")
 MESSAGE(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package(Pangolin)
 find_package(realsense2)
+
+# pcl 
+find_package(PCL REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+# octomap 
+find_package(octomap REQUIRED)
+include_directories(${OCTOMAP_INCLUDE_DIRS})
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
-${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2
-${PROJECT_SOURCE_DIR}/Thirdparty/g2o
 ${EIGEN3_INCLUDE_DIR}
-${Pangolin_INCLUDE_DIRS}
+# ${Pangolin_INCLUDE_DIRS}
 )
+
+if(Pangolin_FOUND)
+    add_definitions(-DUSE_PANGOLIN)
+    include_directories(${Pangolin_INCLUDE_DIRS})
+endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
+if(Pangolin_FOUND)
+    list(APPEND ORB_SRC_FILES_WITH_PANGOLIN
+        src/Viewer.cc
+        include/Viewer.h
+        src/MapDrawer.cc
+        include/MapDrawer.h
+        src/FrameDrawer.cc
+        include/FrameDrawer.h
+    )
+endif()
+
 add_library(${PROJECT_NAME} SHARED
+${ORB_SRC_FILES_WITH_PANGOLIN}
 src/System.cc
 src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/ORBextractor.cc
 src/ORBmatcher.cc
-src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc
 src/KeyFrame.cc
 src/Atlas.cc
 src/Map.cc
-src/MapDrawer.cc
 src/Optimizer.cc
 src/Frame.cc
 src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
-src/Viewer.cc
 src/ImuTypes.cc
+src/DenseMapping.cc
 src/G2oTypes.cc
 src/CameraModels/Pinhole.cpp
 src/CameraModels/KannalaBrandt8.cpp
@@ -90,18 +112,16 @@ include/LocalMapping.h
 include/LoopClosing.h
 include/ORBextractor.h
 include/ORBmatcher.h
-include/FrameDrawer.h
 include/Converter.h
 include/MapPoint.h
 include/KeyFrame.h
 include/Atlas.h
 include/Map.h
-include/MapDrawer.h
 include/Optimizer.h
 include/Frame.h
+include/DenseMapping.h
 include/KeyFrameDatabase.h
 include/Sim3Solver.h
-include/Viewer.h
 include/ImuTypes.h
 include/G2oTypes.h
 include/CameraModels/GeometricCamera.h
@@ -115,15 +135,35 @@ include/SerializationUtils.h
 include/Config.h
 include/Settings.h)
 
+if(Pangolin_FOUND)
+   list(APPEND PANGOLIN_FOR_INCLUDE_DIRS
+      ${Pangolin_INCLUDE_DIRS}
+   )
+   list(APPEND PANGOLIN_FOR_LIBRARIES
+      ${Pangolin_LIBRARIES}
+   )
+endif()
+
 add_subdirectory(Thirdparty/g2o)
 add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/Sophus)
 
+target_include_directories(${PROJECT_NAME} PUBLIC
+${PROJECT_SOURCE_DIR}
+${PROJECT_SOURCE_DIR}/include
+${PROJECT_SOURCE_DIR}/include/CameraModels
+${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
+${EIGEN3_INCLUDE_DIR}
+${PANGOLIN_FOR_INCLUDE_DIRS}
+)
+
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
-${Pangolin_LIBRARIES}
-${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+${PCL_LIBRARIES} 
+${OCTOMAP_LIBRARIES}
+${PANGOLIN_FOR_LIBRARIES}
+DBoW2
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
@@ -220,25 +260,25 @@ endif()
 # endif()
 
 #Monocular inertial examples
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
 
-add_executable(mono_inertial_euroc
-        Examples/Monocular-Inertial/mono_inertial_euroc.cc)
-target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
+# add_executable(mono_inertial_euroc
+#         Examples/Monocular-Inertial/mono_inertial_euroc.cc)
+# target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 
-add_executable(mono_inertial_tum_vi
-        Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
-target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+# add_executable(mono_inertial_tum_vi
+#         Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
+# target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
 
-if(realsense2_FOUND)
-    add_executable(mono_inertial_realsense_t265
-            Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc)
-    target_link_libraries(mono_inertial_realsense_t265 ${PROJECT_NAME})
+# if(realsense2_FOUND)
+#     add_executable(mono_inertial_realsense_t265
+#             Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc)
+#     target_link_libraries(mono_inertial_realsense_t265 ${PROJECT_NAME})
 
-    add_executable(mono_inertial_realsense_D435i
-            Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc)
-    target_link_libraries(mono_inertial_realsense_D435i ${PROJECT_NAME})
-endif()
+#     add_executable(mono_inertial_realsense_D435i
+#             Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc)
+#     target_link_libraries(mono_inertial_realsense_D435i ${PROJECT_NAME})
+# endif()
 
 # #Stereo Inertial examples
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo-Inertial)
@@ -384,17 +424,16 @@ endif()
 # target_link_libraries(stereo_inertial_tum_vi_old ${PROJECT_NAME})
 
 # if(realsense2_FOUND)
-#     add_executable(stereo_inertial_realsense_t265_old
-#             Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cc)
-#     target_link_libraries(stereo_inertial_realsense_t265_old ${PROJECT_NAME})
-
-#     add_executable(stereo_inertial_realsense_D435i_old
-#             Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc)
-#     target_link_libraries(stereo_inertial_realsense_D435i_old ${PROJECT_NAME})
+#     include_directories(${PROJECT_NAME}
+#     ${realsense_INCLUDE_DIR}
+#     )
+#     target_link_libraries(${PROJECT_NAME}
+#     ${realsense2_LIBRARY}
+#     )
 # endif()
 
 # Build tools
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tools)
-add_executable(bin_vocabulary
-tools/bin_vocabulary.cc)
-target_link_libraries(bin_vocabulary ${PROJECT_NAME})
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tools)
+# add_executable(bin_vocabulary
+# tools/bin_vocabulary.cc)
+# target_link_libraries(bin_vocabulary ${PROJECT_NAME})

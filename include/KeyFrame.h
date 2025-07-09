@@ -38,6 +38,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>// 体素格滤波
 
 namespace ORB_SLAM3
 {
@@ -196,6 +198,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     KeyFrame();
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
+    KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB, cv::Mat rgb, cv::Mat depth);
 
     // Pose functions
     void SetPose(const Sophus::SE3f &Tcw);
@@ -495,6 +498,10 @@ protected:
     // Calibration
     Eigen::Matrix3f mK_;
 
+    cv::Mat mImDep; //depth image
+    cv::Mat mImRGB; //rgb image
+    pcl::PointCloud<pcl::PointXYZ>::Ptr mCamPC; //point cloud in local camera system
+
     // Mutex
     std::mutex mMutexPose; // for pose, velocity and biases
     std::mutex mMutexConnections;
@@ -503,6 +510,7 @@ protected:
 
 public:
     GeometricCamera* mpCamera, *mpCamera2;
+    auto& GetPointCloud(){return mCamPC;}
 
     //Indexes of stereo observations correspondences
     std::vector<int> mvLeftToRightMatch, mvRightToLeftMatch;
@@ -523,6 +531,7 @@ public:
     Eigen::Vector3f GetRightCameraCenter();
     Eigen::Matrix<float,3,3> GetRightRotation();
     Eigen::Vector3f GetRightTranslation();
+    void UpdatePointCloud();
 
     void PrintPointDistribution(){
         int left = 0, right = 0;

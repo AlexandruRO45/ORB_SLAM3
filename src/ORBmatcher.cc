@@ -1082,7 +1082,6 @@ namespace ORB_SLAM3
                                                                         : (bestIdx2 < pKF2 -> NLeft) ? pKF2 -> mvKeys[bestIdx2]
                                                                                                      : pKF2 -> mvKeysRight[bestIdx2 - pKF2 -> NLeft];
                         vMatches12[idx1]=bestIdx2;
-                        vbMatched2[bestIdx2]=true;
                         nmatches++;
 
                         if(mbCheckOrientation)

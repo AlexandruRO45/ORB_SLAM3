@@ -15,13 +15,68 @@
 * You should have received a copy of the GNU General Public License along with ORB-SLAM3.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+// ======================================================================================================================================
+//                                          ORB-SLAM3: Open-Source SLAM for Monocular, Stereo and RGB-D Cameras
+// ======================================================================================================================================
+/*
+ * ORB-SLAM2 mainly draws inspiration from the ideas of PTAM. The main borrowed components are:
+ * - ORB feature points from Rubble;
+ * - Place recognition from DBoW2, used for loop closure detection;
+ * - Loop closure correction and the covisibility graph concept from Strasdat;
+ * - Optimization using g2o, developed by Kuemmerle and Grisetti.
+ * 
+ * System entry points:
+ * 1】Input image → Estimate camera pose
+ *     Monocular: GrabImageMonocular(im);
+ *     Stereo:    GrabImageStereo(imRectLeft, imRectRight);
+ *     RGB-D:     GrabImageMonocular(imRectLeft, imRectRight);
+ * 
+ * 2】Convert to grayscale image
+ *     Monocular: mImGray
+ *     Stereo:    mImGray, imGrayRight
+ *     RGB-D:     mImGray, imDepth
+ * 
+ * 3】Construct Frame
+ *     Monocular (not initialized):  Frame(mImGray, mpIniORBextractor)
+ *     Monocular (initialized):      Frame(mImGray, mpORBextractorLeft)
+ *     Stereo:                       Frame(mImGray, imGrayRight, mpORBextractorLeft, mpORBextractorRight)
+ *     RGB-D:                        Frame(mImGray, imDepth, mpORBextractorLeft)
+ * 
+ * 4】Tracking
+ *     The data flow enters the Tracking thread → see Tracking.cc
+ * 
+ * ORB-SLAM uses three threads for tracking, map building, and loop closing respectively.
+ *
+ * I. Tracking:
+ *     - ORB feature extraction
+ *     - Initial pose estimation (velocity-based)
+ *     - Pose optimization (Track local map, use nearby map points to find more feature matches and refine pose)
+ *     - Keyframe selection
+ *
+ * II. Mapping:
+ *     - Add keyframe (update all graphs)
+ *     - Validate newly added map points (remove outliers)
+ *     - Generate new map points (via triangulation)
+ *     - Local bundle adjustment (adjust current keyframe and neighboring ones, remove outliers)
+ *     - Keyframe validation (remove redundant keyframes)
+ *
+ * III. Loop Closing:
+ *     - Select similar frames (bag-of-words)
+ *     - Detect loop (compute similarity transform (3D<->3D); due to scale drift, a similarity transform is used, then RANSAC for inlier count)
+ *     - Fuse 3D points, update all graphs
+ *     - Graph optimization (propagate transformation matrices), update all map points
+ */
+
+ #ifdef USE_PANGOLIN
+#include <pangolin/pangolin.h>
+
+#endif
 
 
 
 #include "System.h"
 #include "Converter.h"
 #include <thread>
-#include <pangolin/pangolin.h>
 #include <iomanip>
 #include <openssl/md5.h>
 #include <boost/serialization/base_object.hpp>
@@ -32,30 +87,31 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
-#include <time.h>
+
+namespace ORB_SLAM3
+{
 
 bool has_suffix(const std::string &str, const std::string &suffix) {
   std::size_t index = str.find(suffix, str.size() - suffix.size());
   return (index != std::string::npos);
 }
 
-namespace ORB_SLAM3
-{
-
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer, const int initFr, const string &strSequence):
-    mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
-    mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
+               const bool bUseViewer, const int initFr, const string &strSequence): mSensor(sensor), 
+#ifdef USE_PANGOLIN 
+    mpViewer(static_cast<Viewer*>(NULL)), 
+#endif 
+    mbReset(false), mbResetActiveMap(false), mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
     // Output welcome message
-    cout << endl <<
-    "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
-    "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
-    "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
-    "This is free software, and you are welcome to redistribute it" << endl <<
-    "under certain conditions. See LICENSE.txt." << endl << endl;
+    // cout << endl <<
+    // "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
+    // "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza." << endl <<
+    // "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
+    // "This is free software, and you are welcome to redistribute it" << endl <<
+    // "under certain conditions. See LICENSE.txt." << endl << endl;
 
     cout << "Input sensor was set to: ";
 
@@ -119,20 +175,21 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     {
         //Load ORB Vocabulary
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
-        clock_t tStart = clock();
+
         mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = false; // chose loading method based on file extension
-        if (has_suffix(strVocFile, ".txt"))
-        bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        bool bVocLoad = false;
+        if (has_suffix(strVocFile, ".txt")){
+          bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        }
         else
-        bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+          bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Failed to open at: " << strVocFile << endl;
+            cerr << "Falied to open at: " << strVocFile << endl;
             exit(-1);
         }
-        printf("Vocabulary loaded in %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+        cout << "Vocabulary loaded!" << endl << endl;
 
         //Create KeyFrame Database
         mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -145,20 +202,20 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     {
         //Load ORB Vocabulary
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
-        clock_t tStart = clock();
+
         mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = false; // chose loading method based on file extension
+        bool bVocLoad = false;
         if (has_suffix(strVocFile, ".txt"))
-        bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+          bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
         else
-        bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+          bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Failed to open at: " << strVocFile << endl;
+            cerr << "Falied to open at: " << strVocFile << endl;
             exit(-1);
         }
-        printf("Vocabulary loaded in %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
+        cout << "Vocabulary loaded!" << endl << endl;
 
         //Create KeyFrame Database
         mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -196,14 +253,21 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mpAtlas->SetInertialSensor();
 
     //Create Drawers. These are used by the Viewer
+#ifdef USE_PANGOLIN
     mpFrameDrawer = new FrameDrawer(mpAtlas);
     mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+#endif
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     cout << "Seq. Name: " << strSequence << endl;
-    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence);
+    mpTracker = new Tracking(
+        this, mpVocabulary,
+#ifdef USE_PANGOLIN
+        mpFrameDrawer, mpMapDrawer,
+#endif
+        mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence
+    );
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(this, mpAtlas, mSensor==MONOCULAR || mSensor==IMU_MONOCULAR,
@@ -222,6 +286,21 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     else
         mpLocalMapper->mbFarPoints = false;
 
+    //Initialize the Dense mapping thread and launch
+    if(settings_->doDenseMapping()) {
+        mpDenseMapper = new DenseMapping(this, mpAtlas, settings_); //todo: resolution as parameter
+        mptDenseMapping = new thread(&ORB_SLAM3::DenseMapping::Run, mpDenseMapper);
+
+#ifdef USE_PANGOLIN
+            mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+            mpMapDrawer->mpDenseMapper = mpDenseMapper;
+#endif
+    }
+    else {
+        mpDenseMapper = NULL;
+        mptDenseMapping = NULL;
+    }
+
     //Initialize the Loop Closing thread and launch
     // mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR
     mpLoopCloser = new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, activeLC); // mSensor!=MONOCULAR);
@@ -233,9 +312,11 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpLocalMapper->SetTracker(mpTracker);
     mpLocalMapper->SetLoopCloser(mpLoopCloser);
+    mpLocalMapper->SetDenseMapper(mpDenseMapper);
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+    mpLoopCloser->SetDenseMapper(mpDenseMapper);
 
     //usleep(10*1000*1000);
 
@@ -243,11 +324,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(bUseViewer)
     //if(false) // TODO
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_);
+        std::cout << "Viewer Enabled..." << std::endl;
+
+#ifdef USE_PANGOLIN
+        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile, settings_);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
         mpLoopCloser->mpViewer = mpViewer;
         mpViewer->both = mpFrameDrawer->both;
+#endif
     }
 
     // Fix verbosity
@@ -1372,6 +1457,57 @@ bool System::isLost()
     }
 }
 
+vector<Eigen::Matrix4f> System::GetCameraTrajectory()
+{
+    // Check if the tracker is initialized and has images first.
+    if (mpTracker->mState == Tracking::NOT_INITIALIZED ||
+        mpTracker->mState == Tracking::NO_IMAGES_YET)
+    {
+        return vector<Eigen::Matrix4f>();
+    }
+    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
+    vector<Eigen::Matrix4f> trajectory;
+    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
+    // We need to get first the keyframe pose and then concatenate the relative transformation.
+    // Frames not localized (tracking failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+    // which is true when tracking failed (lbL).
+    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+    for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
+        lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
+    {
+        if(*lbL)
+            continue;
+
+        KeyFrame* pKF = *lRit;
+
+        Sophus::SE3f Trw;
+
+        // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
+        while(pKF->isBad())
+        {
+            Trw = Trw * pKF->mTcp;
+            pKF = pKF->GetParent();
+        }
+
+        Trw = Trw * pKF->GetPose() * Two;
+
+        Sophus::SE3f Tcw = (*lit) * Trw;
+        Sophus::SE3f Twc = Tcw.inverse();
+
+        trajectory.push_back(Twc.matrix());
+    }
+    
+    return trajectory;
+}
 
 bool System::isFinished()
 {
@@ -1557,6 +1693,15 @@ string System::CalculateCheckSum(string filename, int type)
     }
 
     return checksum;
+}
+
+GridMap& System::Get2DOccMap(){
+    if(mpDenseMapper)
+        return mpDenseMapper->get2DOccMap();
+    else{
+        std::cout<<"can't get 2D occ map"<<std::endl;
+        throw std::exception();
+    }
 }
 
 } //namespace ORB_SLAM

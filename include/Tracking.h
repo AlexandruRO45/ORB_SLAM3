@@ -20,11 +20,17 @@
 #ifndef TRACKING_H
 #define TRACKING_H
 
+#ifdef USE_PANGOLIN
+#include "Viewer.h"
+#include "MapDrawer.h"
+#include "FrameDrawer.h"
+#endif
+
+
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
-#include "Viewer.h"
-#include "FrameDrawer.h"
 #include "Atlas.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
@@ -32,7 +38,6 @@
 #include "ORBVocabulary.h"
 #include "KeyFrameDatabase.h"
 #include "ORBextractor.h"
-#include "MapDrawer.h"
 #include "System.h"
 #include "ImuTypes.h"
 #include "Settings.h"
@@ -44,9 +49,10 @@
 
 namespace ORB_SLAM3
 {
-
+#ifdef USE_PANGOLIN
 class Viewer;
 class FrameDrawer;
+#endif
 class Atlas;
 class LocalMapping;
 class LoopClosing;
@@ -58,8 +64,12 @@ class Tracking
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Atlas* pAtlas,
-             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string());
+    Tracking(System* pSys, ORBVocabulary* pVoc,
+#ifdef USE_PANGOLIN
+        FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, 
+#endif
+        Atlas* pAtlas, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, Settings* settings, const string &_nameSeq=std::string()
+);
 
     ~Tracking();
 
@@ -77,7 +87,10 @@ public:
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
+
+#ifdef USE_PANGOLIN
     void SetViewer(Viewer* pViewer);
+#endif
     void SetStepByStep(bool bSet);
     bool GetStepByStep();
 
@@ -139,6 +152,8 @@ public:
     Frame mLastFrame;
 
     cv::Mat mImGray;
+    cv::Mat mImRGB;//rgb image
+    cv::Mat mImDep;//depth image
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
@@ -276,12 +291,14 @@ protected:
     
     // System
     System* mpSystem;
-    
+
+#ifdef USE_PANGOLIN
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
     bool bStepByStep;
+#endif
 
     //Atlas
     Atlas* mpAtlas;

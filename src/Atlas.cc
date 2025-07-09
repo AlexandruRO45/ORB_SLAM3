@@ -16,9 +16,13 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Atlas.h"
+#ifdef USE_PANGOLIN
 #include "Viewer.h"
+#endif
 
+
+
+#include "Atlas.h"
 #include "GeometricCamera.h"
 #include "Pinhole.h"
 #include "KannalaBrandt8.h"
@@ -94,11 +98,13 @@ unsigned long int Atlas::GetLastInitKFid()
     return mnLastInitKFidMap;
 }
 
+#ifdef USE_PANGOLIN
 void Atlas::SetViewer(Viewer* pViewer)
 {
     mpViewer = pViewer;
     mHasViewer = true;
 }
+#endif
 
 void Atlas::AddKeyFrame(KeyFrame* pKF)
 {

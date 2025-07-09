@@ -86,6 +86,11 @@ void LoopClosing::SetLocalMapper(LocalMapping *pLocalMapper)
     mpLocalMapper=pLocalMapper;
 }
 
+void LoopClosing::SetDenseMapper(DenseMapping *pDenseMapper)
+{
+    mpDenseMapper = pDenseMapper;
+}
+
 
 void LoopClosing::Run()
 {
@@ -272,6 +277,7 @@ void LoopClosing::Run()
 
 #endif
                         CorrectLoop();
+                        mpDenseMapper->RequestCloseLoop();
 #ifdef REGISTER_TIMES
                         std::chrono::steady_clock::time_point time_EndLoop = std::chrono::steady_clock::now();
 
@@ -975,6 +981,10 @@ void LoopClosing::CorrectLoop()
     mpLocalMapper->RequestStop();
     mpLocalMapper->EmptyQueue(); // Proccess keyframes in the queue
 
+    if(mpDenseMapper!=nullptr){
+        mpDenseMapper->EmptyQueue();//drop keyframes in queue
+    }
+
     // If a Global Bundle Adjustment is running, abort it
     if(isRunningGBA())
     {
@@ -1069,6 +1079,11 @@ void LoopClosing::CorrectLoop()
         for(KeyFrameAndPose::iterator mit=CorrectedSim3.begin(), mend=CorrectedSim3.end(); mit!=mend; mit++)
         {
             KeyFrame* pKFi = mit->first;
+
+            // Update dense mapper to close loop
+            if(mpDenseMapper!=nullptr)
+                mpDenseMapper->InsertKeyFrame(pKFi);
+
             g2o::Sim3 g2oCorrectedSiw = mit->second;
             g2o::Sim3 g2oCorrectedSwi = g2oCorrectedSiw.inverse();
 

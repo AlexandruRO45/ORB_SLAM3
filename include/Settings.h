@@ -68,8 +68,8 @@ namespace ORB_SLAM3 {
         CameraType cameraType() {return cameraType_;}
         GeometricCamera* camera1() {return calibration1_;}
         GeometricCamera* camera2() {return calibration2_;}
-        cv::Mat camera1DistortionCoef() {return cv::Mat(vPinHoleDistortion1_.size(),1,CV_32F,vPinHoleDistortion1_.data());}
-        cv::Mat camera2DistortionCoef() {return cv::Mat(vPinHoleDistortion2_.size(),1,CV_32F,vPinHoleDistortion2_.data());}
+        cv::Mat camera1DistortionCoef() {return cv::Mat(vPinHoleDistorsion1_.size(),1,CV_32F,vPinHoleDistorsion1_.data());}
+        cv::Mat camera2DistortionCoef() {return cv::Mat(vPinHoleDistorsion2_.size(),1,CV_32F,vPinHoleDistorsion1_.data());}
 
         Sophus::SE3f Tlr() {return Tlr_;}
         float bf() {return bf_;}
@@ -112,6 +112,13 @@ namespace ORB_SLAM3 {
         float viewPointF() {return viewPointF_;}
         float imageViewerScale() {return imageViewerScale_;}
 
+        bool doDenseMapping() {return bDenseMapping_;}
+        bool map2D() {return bMap2D_;}
+        float gridSize() {return gridSize_;}
+        float camHeight() {return camHeight_;}
+        float maxRange() {return maxRange_;}
+        bool simpleGround(){return bSimple_;}
+
         std::string atlasLoadFile() {return sLoadFrom_;}
         std::string atlasSaveFile() {return sSaveto_;}
 
@@ -153,30 +160,31 @@ namespace ORB_SLAM3 {
         void readViewer(cv::FileStorage& fSettings);
         void readLoadAndSave(cv::FileStorage& fSettings);
         void readOtherParameters(cv::FileStorage& fSettings);
+        void readDenseMapping(cv::FileStorage& fSettings);
 
         void precomputeRectificationMaps();
 
-        int sensor_ = 0;
-        CameraType cameraType_ = PinHole;
+        int sensor_;
+        CameraType cameraType_;     //Camera type
 
         /*
          * Visual stuff
          */
-        GeometricCamera* calibration1_ = nullptr, *calibration2_ = nullptr;   //Camera calibration
-        GeometricCamera* originalCalib1_ = nullptr, *originalCalib2_ = nullptr;
-        std::vector<float> vPinHoleDistortion1_, vPinHoleDistortion2_;
+        GeometricCamera* calibration1_, *calibration2_;   //Camera calibration
+        GeometricCamera* originalCalib1_, *originalCalib2_;
+        std::vector<float> vPinHoleDistorsion1_, vPinHoleDistorsion2_;
 
         cv::Size originalImSize_, newImSize_;
-        float fps_ = 1.f;
-        bool bRGB_ = false;
+        float fps_;
+        bool bRGB_;
 
-        bool bNeedToUndistort_ = false;
-        bool bNeedToRectify_ = false;
-        bool bNeedToResize1_ = false, bNeedToResize2_ = false;
+        bool bNeedToUndistort_;
+        bool bNeedToRectify_;
+        bool bNeedToResize1_, bNeedToResize2_;
 
         Sophus::SE3f Tlr_;
-        float thDepth_ = 60.f;
-        float bf_ = 0.f, b_ = 0.f;
+        float thDepth_;
+        float bf_, b_;
 
         /*
          * Rectification stuff
@@ -187,36 +195,46 @@ namespace ORB_SLAM3 {
         /*
          * Inertial stuff
          */
-        float noiseGyro_ = 0.f, noiseAcc_ = 0.f;
-        float gyroWalk_ = 0.f, accWalk_ = 0.f;
-        float imuFrequency_ = 0.f;
+        float noiseGyro_, noiseAcc_;
+        float gyroWalk_, accWalk_;
+        float imuFrequency_;
         Sophus::SE3f Tbc_;
-        bool insertKFsWhenLost_ = false;
+        bool insertKFsWhenLost_;
 
         /*
          * RGBD stuff
          */
-        float depthMapFactor_ = 1.f;
+        float depthMapFactor_;
 
         /*
          * ORB stuff
          */
-        int nFeatures_ = 1000;
-        float scaleFactor_ = 1.f;
-        int nLevels_ = 1;
-        int initThFAST_ = 20, minThFAST_ = 7;
+        int nFeatures_;
+        float scaleFactor_;
+        int nLevels_;
+        int initThFAST_, minThFAST_;
 
         /*
          * Viewer stuff
          */
-        float keyFrameSize_ = 0.05f;
-        float keyFrameLineWidth_ = 1.f;
-        float graphLineWidth_ = 0.9f;
-        float pointSize_ = 2.f;
-        float cameraSize_ = 0.08f;
-        float cameraLineWidth_ = 3.f;
-        float viewPointX_ = 0.f, viewPointY_ = 0.f, viewPointZ_ = 0.f, viewPointF_ = 100.f;
-        float imageViewerScale_ = 1.f;
+        float keyFrameSize_;
+        float keyFrameLineWidth_;
+        float graphLineWidth_;
+        float pointSize_;
+        float cameraSize_;
+        float cameraLineWidth_;
+        float viewPointX_, viewPointY_, viewPointZ_, viewPointF_;
+        float imageViewerScale_;
+
+        /*
+        * DenseMapping stuff
+        */
+       bool bDenseMapping_;
+       float gridSize_;
+       bool bMap2D_;
+       bool bSimple_;
+       float camHeight_;
+       float maxRange_;
 
         /*
          * Save & load maps
@@ -226,7 +244,7 @@ namespace ORB_SLAM3 {
         /*
          * Other stuff
          */
-        float thFarPoints_ = 100.f;
+        float thFarPoints_;
 
     };
 };

@@ -2,9 +2,9 @@ name: Build ORB_SLAM
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ "main" , "master" ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ "main" , "master" ]
   workflow_dispatch:
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
         tar xvf ../libpangolin.tar.gz -C ../
         cd ../Pangolin-0.9.1
         ./scripts/install_prerequisites.sh required
-        cmake -B build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake -B build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_FLAGS="-w"
         cmake --build build --config ${{ matrix.build_type }}
 
     - name: Set reusable strings
@@ -49,7 +49,7 @@ jobs:
         cd Thirdparty/DBoW2
         mkdir build
         cd build
-        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_FLAGS="-w"
         make -j$(nproc)
         
     - name: Build g2o
@@ -58,7 +58,7 @@ jobs:
         cd Thirdparty/g2o
         mkdir build
         cd build
-        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_FLAGS="-w"
         make -j$(nproc)
         
     - name: Build sophus
@@ -67,7 +67,7 @@ jobs:
         cd Thirdparty/Sophus
         mkdir build
         cd build
-        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_FLAGS="-w"
         make -j$(nproc)
 
     - name: Build ORB_SLAM
@@ -75,5 +75,5 @@ jobs:
         echo "Configuring and building ORB_SLAM3 ..."
         mkdir build
         cd build
-        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        cmake .. -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_CXX_FLAGS="-w"
         make -j$(nproc)

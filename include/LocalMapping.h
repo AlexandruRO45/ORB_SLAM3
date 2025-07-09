@@ -23,6 +23,7 @@
 #include "KeyFrame.h"
 #include "Atlas.h"
 #include "LoopClosing.h"
+#include "DenseMapping.h"
 #include "Tracking.h"
 #include "KeyFrameDatabase.h"
 #include "Settings.h"
@@ -36,6 +37,7 @@ namespace ORB_SLAM3
 class System;
 class Tracking;
 class LoopClosing;
+class DenseMapping;
 class Atlas;
 
 class LocalMapping
@@ -45,6 +47,7 @@ public:
     LocalMapping(System* pSys, Atlas* pAtlas, const float bMonocular, bool bInertial, const string &_strSeqName=std::string());
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
+    void SetDenseMapper(DenseMapping* pDenseMapper);
 
     void SetTracker(Tracking* pTracker);
 
@@ -160,6 +163,7 @@ protected:
 
     LoopClosing* mpLoopCloser;
     Tracking* mpTracker;
+    DenseMapping* mpDenseMapper;
 
     std::list<KeyFrame*> mlNewKeyFrames;
 
